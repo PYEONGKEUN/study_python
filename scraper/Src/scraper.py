@@ -9,15 +9,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
-mobile_emulation = {
 
-    "deviceMetrics": { "width": 360, "height": 640, "pixelRatio": 3.0 },
-
-    "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19" }
-
-chrome_options = Options()
-
-chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
 # bs4 module
 import re
 from bs4 import BeautifulSoup
@@ -47,9 +39,15 @@ class ScrapImgs:
         self._any_of_these_words = any_of_these_words
         self._none_of_these_words = none_of_these_words
         self._SLEEP_TIME = 3
-        self._SCROLL_SLEEP_TIME = 1
+        self._SCROLL_SLEEP_TIME = 2
         self._SCROLL_SIZE = 1080
         #self.driver = webdriver.Chrome('.\chromedriver.exe')
+        # 모바일 환경을 설정
+        mobile_emulation = {
+            "deviceMetrics": { "width": 800, "height": 900, "pixelRatio": 3.0 },
+            "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19" }
+        chrome_options = Options()
+        chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
         self.driver = webdriver.Chrome(chrome_options = chrome_options)
 
 
@@ -69,21 +67,9 @@ class ScrapImgs:
         self.driver.implicitly_wait(self._SLEEP_TIME)
 
 
-        desired_caps = {}
-        desired_caps['testdroid_username'] = 'ville-veikko.helppi@bitbar.com'
-        desired_caps['testdroid_password'] = 'xxxxxxxx'
-        desired_caps['testdroid_target'] = 'chrome'
-        desired_caps['testdroid_project'] = 'Appium Chrome'
-        desired_caps['testdroid_testrun'] = 'TestRun 1'
-        desired_caps['testdroid_device'] = 'Asus Google Nexus 7 (2013) ME571KL'
-        desired_caps['platformName'] = 'android'
-        desired_caps['deviceName'] = 'AndroidDevice'
-        desired_caps['browserName'] = 'chrome'
-
-
         #구글 이미지 검색에 접근      
         self.driver.get('https://www.google.co.kr/imghp?hl=ko')
-        #self.driver = driver.Remote('https://www.google.co.kr/imghp?hl=ko',desired_caps)
+        
         
         time.sleep(self._SLEEP_TIME)
         # 검색
@@ -140,33 +126,34 @@ class ScrapImgs:
         
         #검색 결과에서 스크롤 -> 사람이 하는것처럼 딜레이를 주어 구글을 속임
         prevPageYOffset = self.driver.execute_script('return window.pageYOffset;')
-        for i in range(1,100):
+        for i in range(1,10000):
             self.driver.execute_script("window.scrollTo(0,"+str(i*self._SCROLL_SIZE)+")")
-            if(prevPageYOffset == self.driver.execute_script('return window.pageYOffset;')):
-                html = self.driver.page_source
-                bsObj = BeautifulSoup(html, 'html.parser')
+            # if(prevPageYOffset == self.driver.execute_script('return window.pageYOffset;')):
+            #     html = self.driver.page_source
+            #     bsObj = BeautifulSoup(html, 'html.parser')
             
-                # 검색결과 더보기 버튼은 항상 존재하지만 
-                # style="display:none" style="" 로 보였다 안보였다 한다
-                showMore = bsObj.find('input',{'value':'결과 더보기'})
-                # regex = re.compile('none')
-                # m = regex.match(showMore['style'])
-                # style="display:none" 가 match 된다면 아직 보이지 않음
-                # None이여야 보이는 거임 None 아닐 경우에 실행 해야함
-                #if(showMore != None and m is None):
-                noImages = bsObj.find('div',text='더 이상 표시할 콘텐츠가 없습니다.')
-                if(noImages is not None): break
-                if(showMore is not None): 
-                    #self.driver.find_element_by_css_selector("input[class='ksb'][value='결과 더보기']").clcik()
-                    try:
-                        self.driver.find_element(By.CSS_SELECTOR, ".mye4qd").click()
-                    except:
-                        None
-                    try:
-                        self.driver.find_element_by_xpath("/html//div[@id='islmp']//div[@class='tmS4cc']//input[@value='결과 더보기']").clcik()
-                    except:
-                        None
-
+            #     # 검색결과 더보기 버튼은 항상 존재하지만 
+            #     # style="display:none" style="" 로 보였다 안보였다 한다
+            #     showMore = bsObj.find('input',{'value':'결과 더보기'})
+            #     # regex = re.compile('none')
+            #     # m = regex.match(showMore['style'])
+            #     # style="display:none" 가 match 된다면 아직 보이지 않음
+            #     # None이여야 보이는 거임 None 아닐 경우에 실행 해야함
+            #     #if(showMore != None and m is None):
+            #     noImages = bsObj.find('div',text='더 이상 표시할 콘텐츠가 없습니다.')
+            #     if(noImages is not None): break
+            #     if(showMore is not None): 
+            #         #self.driver.find_element_by_css_selector("input[class='ksb'][value='결과 더보기']").clcik()
+            #         try:
+            #             self.driver.find_element(By.CSS_SELECTOR, ".mye4qd").click()
+            #         except:
+            #             None
+            #         try:
+            #             self.driver.find_element_by_xpath("/html//div[@id='islmp']//div[@class='tmS4cc']//input[@value='결과 더보기']").clcik()
+            #         except:
+            #             None
+            if(prevPageYOffset == self.driver.execute_script('return window.pageYOffset;')): 
+                break
             time.sleep(self._SCROLL_SLEEP_TIME)
             prevPageYOffset = self.driver.execute_script('return window.pageYOffset;')
             
@@ -226,5 +213,5 @@ class ScrapImgs:
 
 
 if __name__ == '__main__':
-    app = ScrapImgs('./','엄지','엄지','여자친구','','손가락 손톱 지문 손금 손바닥 손')
+    app = ScrapImgs('./','엄지','엄지','','','손가락 손톱 지문 손금 손바닥 손')
     app.run()
