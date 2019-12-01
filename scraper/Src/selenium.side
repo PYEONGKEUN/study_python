@@ -1,0 +1,74 @@
+{
+  "id": "346b0a99-1b9d-440a-87db-2a08f0626495",
+  "version": "2.0",
+  "name": "crawl google image",
+  "url": "https://www.google.co.kr",
+  "tests": [{
+    "id": "9224fcb3-e246-4b4e-b915-8f39436289ca",
+    "name": "구글 이미지에서 강아지 검색후 스크롤",
+    "commands": [{
+      "id": "2a852f51-c43f-4cb4-8649-54b4727f7399",
+      "comment": "",
+      "command": "open",
+      "target": "https://www.google.co.kr/imghp?hl=ko",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "886a351a-7b29-40fe-b40c-01b7fc1a7921",
+      "comment": "",
+      "command": "click",
+      "target": "name=q",
+      "targets": [
+        ["name=q", "name"],
+        ["css=.gLFyf", "css:finder"],
+        ["xpath=//input[@name='q']", "xpath:attributes"],
+        ["xpath=//div[@id='sbtc']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[2]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "9f271045-ccb1-4e15-b783-471d22d2d9e9",
+      "comment": "",
+      "command": "type",
+      "target": "name=q",
+      "targets": [
+        ["name=q", "name"],
+        ["css=.gLFyf", "css:finder"],
+        ["xpath=//input[@name='q']", "xpath:attributes"],
+        ["xpath=//div[@id='sbtc']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[2]/input", "xpath:position"]
+      ],
+      "value": "강아지"
+    }, {
+      "id": "60e3e5e3-f00a-4209-be5b-1bac379ab90b",
+      "comment": "",
+      "command": "sendKeys",
+      "target": "name=q",
+      "targets": [
+        ["name=q", "name"],
+        ["css=.gLFyf", "css:finder"],
+        ["xpath=//input[@name='q']", "xpath:attributes"],
+        ["xpath=//div[@id='sbtc']/div/div[2]/input", "xpath:idRelative"],
+        ["xpath=//div[2]/input", "xpath:position"]
+      ],
+      "value": "${KEY_ENTER}"
+    }, {
+      "id": "fe453eb1-8517-4aac-9bac-af3c65769639",
+      "comment": "",
+      "command": "runScript",
+      "target": "window.scrollTo(0,1725)",
+      "targets": [],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "98a3f8e8-3021-40a2-8d13-dfe36b0b2bfb",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["9224fcb3-e246-4b4e-b915-8f39436289ca"]
+  }],
+  "urls": ["https://www.google.co.kr/"],
+  "plugins": []
+}
