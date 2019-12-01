@@ -140,27 +140,36 @@ class ScrapImgs:
                 # 검색결과 더보기 버튼은 항상 존재하지만 
                 # style="display:none" style="" 로 보였다 안보였다 한다
                 showMore = bsObj.find('input',{'value':'결과 더보기'})
+                
+
                 # regex = re.compile('none')
                 # m = regex.match(showMore['style'])
                 # style="display:none" 가 match 된다면 아직 보이지 않음
                 # None이여야 보이는 거임 None 아닐 경우에 실행 해야함
                 #if(showMore != None and m is None):
+                # 다른 걸로 검색 해야 할듯
                 noImages = bsObj.find('div',text='더 이상 표시할 콘텐츠가 없습니다.')
-                if(noImages is not None): break
+                #if(noImages is not None): break
+
                 if(showMore is not None):
-                    try:
-                        self.driver.find_element_by_css_selector(By.CSS_SELECTOR, ".mye4qd").click()
-                    except:
-                        None
+                    xpath = "//*["
+                    print(showMore.attrs)
+                    for idx, (key, val) in enumerate(showMore.attrs.items()):
+                        
+                        if(idx != len(showMore.attrs)-1):
+                            xpath+= '@'+str(key)+"='"+str(val)+"' and "
+                        else:
+                            xpath+= '@'+str(key)+"='"+str(val)+"']"
+                   
                     #self.driver.find_element_by_css_selector("input[class='ksb'][value='결과 더보기']").clcik()
                     try:
                         self.driver.find_element(By.CSS_SELECTOR, ".mye4qd").click()
                     except:
                         None
                     try:
-                        self.driver.find_element_by_xpath("/html//div[@id='islmp']//div[@class='tmS4cc']//input[@value='결과 더보기']").clcik()
-                    except:
-                        None
+                        self.driver.find_element_by_xpath(xpath).clcik()
+                    except Exception as e:
+                        print(e)
 
             time.sleep(self._SCROLL_SLEEP_TIME)
             prevPageYOffset = self.driver.execute_script('return window.pageYOffset;')
