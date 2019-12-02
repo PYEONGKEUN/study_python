@@ -60,7 +60,7 @@ class ScrapImgs:
         self._lockProgress= threading.Lock()
         self._fileNum = self.initFileNum()
         self._lockFileNum = threading.Lock()
-        self._totalDownThreadCnt = 10
+        self._totalDownThreadCnt = 20
         self._lockTotalDownThreadCnt = threading.Lock()        
         self._curDownThreadCnt = 0
         self._lockCurDownThreadCnt = threading.Lock()
@@ -68,7 +68,7 @@ class ScrapImgs:
 
         #self.driver = webdriver.Chrome(chrome_options = chrome_options)
 
-
+    # 저장하려는 이름을 가진 파일이 존재한다면 다른 이름으로 바꿈 -> 이름뒤에 붙는 숫자를 변경
     def initFileNum(self):
         num = 0
         namePattern = re.compile(self._fileName+'_'+'\d+')
@@ -112,14 +112,15 @@ class ScrapImgs:
         self._fileNum +=1
         self._lockFileNum.release()
 
-        self._lockCurDownThreadCnt.acquire()
-        self._curDownThreadCnt -=1
-        self._lockCurDownThreadCnt.release()
 
         self._lockProgress.acquire()
         self.increasePregress(self._stepSize)
         print('##progress : '+'{:04.2f}%' .format(self._progress))   
         self._lockProgress.release() 
+
+        self._lockCurDownThreadCnt.acquire()
+        self._curDownThreadCnt -=1
+        self._lockCurDownThreadCnt.release()
 
         
         
@@ -132,23 +133,21 @@ class ScrapImgs:
         path = os.path.join(self._savePath,self._fileName+'_'+str(self._fileNum)+'.jpg')        
         urllib.request.urlretrieve(str(img['src']),path)        
         
-        #Shared Data만 감싸준다
-        
+        #Shared Data만 감싸준다        
 
 
         self._lockFileNum.acquire()
         self._fileNum +=1
         self._lockFileNum.release()
 
-        self._lockCurDownThreadCnt.acquire()
-        self._curDownThreadCnt -=1
-        self._lockCurDownThreadCnt.release()
-
         self._lockProgress.acquire()
         self.increasePregress(self._stepSize)
         print('##progress : '+'{:04.2f}%' .format(self._progress))   
         self._lockProgress.release()
-              
+
+        self._lockCurDownThreadCnt.acquire()
+        self._curDownThreadCnt -=1
+        self._lockCurDownThreadCnt.release()             
 
         
         
@@ -243,7 +242,6 @@ class ScrapImgs:
                 
                     # 검색결과 더보기 버튼은 항상 존재하지만 
                     # style="display:none" style="" 로 보였다 안보였다 한다
-
                     
 
                     showMore = bsObj.find_all('input',{'value':'결과 더보기'})
@@ -311,53 +309,54 @@ class ScrapImgs:
             
 
 
-            
-            idxImgsBase64 = 0 
-            
-            while(True):
-                if(len(imgsBase64) == 0 or idxImgsBase64 > len(imgsBase64)-1 ): break
-                if(self._curDownThreadCnt < self._totalDownThreadCnt ):
-
-                    arg = imgsBase64[idxImgsBase64]
-                    th = threading.Thread(target=self.downImgBase64, args=[arg])
-                    th.start()               
-                    idxImgsBase64+=1
-                #time.sleep(0.05)
-            idxImgsUrl = 0 
-            
-            while(True):
+            if(True):
+                #멀티스레딩을 사용한 이미지 다운로드
+                idxImgsBase64 = 0 
                 
-                if(len(imgsUrl) == 0 or idxImgsUrl > len(imgsUrl)-1): break
+                while(True):
+                    if(len(imgsBase64) == 0 or idxImgsBase64 > len(imgsBase64)-1 ): break
+                    if(self._curDownThreadCnt < self._totalDownThreadCnt ):
 
-                if(self._curDownThreadCnt< self._totalDownThreadCnt ):
-                    arg = imgsUrl[idxImgsUrl]
-                    th = threading.Thread(target=self.DownImgUrl, args=[arg])
-                    th.start()                
-                    idxImgsUrl+=1
-                #time.sleep(0.05)
-
+                        arg = imgsBase64[idxImgsBase64]
+                        th = threading.Thread(target=self.downImgBase64, args=[arg])
+                        th.start()               
+                        idxImgsBase64+=1
+                    #time.sleep(0.05)
+                idxImgsUrl = 0 
                 
+                while(True):
                     
+                    if(len(imgsUrl) == 0 or idxImgsUrl > len(imgsUrl)-1): break
+
+                    if(self._curDownThreadCnt< self._totalDownThreadCnt ):
+                        arg = imgsUrl[idxImgsUrl]
+                        th = threading.Thread(target=self.DownImgUrl, args=[arg])
+                        th.start()                
+                        idxImgsUrl+=1
+                    #time.sleep(0.05)
+            else:
+                            
 
             
-            # #이미지 다운로드
-            # num = 0
-
-            # for img in imgsBase64:
-            #     with open(self._savePath+"\\"+self._fileName+'_'+str(num)+'.jpg', 'wb') as file:
-            #         file.write(base64.b64decode(str(img['src']).split(',')[1]))
-            #     num+=1
-            #     self.increasePregress(self._stepSize)
-            #     print('##progress : '+'{:04.2f}%' .format(self._progress))
-            
+            #멀티스레딩을 사용하지 않은 이미지 다운로드
             
 
-            # for img in imgsUrl:
+                for img in imgsBase64:
+                    path = os.path.join(self._savePath,self._fileName+'_'+str(self._fileNum)+'.jpg') 
+                    with open(path, 'wb') as file:
+                        file.write(base64.b64decode(str(img['src']).split(',')[1]))
+                    self._fileNum+=1
+                    self.increasePregress(self._stepSize)
+                    print('##progress : '+'{:04.2f}%' .format(self._progress))
                 
-            #     urllib.request.urlretrieve(str(img['src']),self._savePath+"\\"+self._fileName+'_'+str(num)+'.jpg')
-            #     num+=1
-            #     self.increasePregress(self._stepSize)
-            #     print('##progress : '+'{:04.2f}%' .format(self._progress))
+                
+
+                for img in imgsUrl:
+                    path = os.path.join(self._savePath,self._fileName+'_'+str(self._fileNum)+'.jpg') 
+                    urllib.request.urlretrieve(str(img['src']),path)
+                    self._fileNum+=1
+                    self.increasePregress(self._stepSize)
+                    print('##progress : '+'{:04.2f}%' .format(self._progress))
 
         except StopException:
             None
@@ -377,7 +376,20 @@ class ScrapImgs:
 
 if __name__ == '__main__':
     start = time.time()
-    app = ScrapImgs('./','올라프','올라프','겨울왕국 아트 그림','','')
+    #파일 저장 경로
+    arg1 = './'
+    #저장할 이미지 이름 ex(올라프 -> 올라프_0 ~ 올라프_12)
+    arg2 = '올라프'
+    #다음 단어 모두 포함
+    arg3 = '올라프'
+    #다음 단어 또는 문구 정확하게 포함
+    arg4 = '겨울왕국 아트 그림'
+    #다음 단어 중 아무거나 포함
+    arg5 = ''
+    #다음 단어 제외
+    arg6 = '감독 배우 유아'
+
+    app = ScrapImgs(arg1,arg2,arg3,arg4,arg5,arg6)
     app.run()
 
     while(True):
