@@ -59,7 +59,7 @@ class ScrapImgs:
         self._progress = 0.0
         self._lockProgress= threading.Lock()
         self._fileNum = self.initFileNum()
-        self._lockFileNum = threading.Lock()
+        #self._lockFileNum = threading.Lock()
         self._totalDownThreadCnt = 20
         self._lockTotalDownThreadCnt = threading.Lock()        
         self._curDownThreadCnt = 0
@@ -94,12 +94,12 @@ class ScrapImgs:
         else:
             pass
 
-    def downImgBase64(self,img):
+    def downImgBase64(self,img, fileNum):
         self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt +=1
         self._lockCurDownThreadCnt.release()
                
-        path = os.path.join(self._savePath,self._fileName+'_'+str(self._fileNum)+'.jpg')        
+        path = os.path.join(self._savePath,self._fileName+'_'+str(fileNum)+'.jpg')        
         with open(path, 'wb') as file:
             file.write(base64.b64decode(str(img['src']).split(',')[1]))        
         
@@ -108,9 +108,7 @@ class ScrapImgs:
         
 
 
-        self._lockFileNum.acquire()
-        self._fileNum +=1
-        self._lockFileNum.release()
+
 
 
         self._lockProgress.acquire()
@@ -125,20 +123,18 @@ class ScrapImgs:
         
         
 
-    def DownImgUrl(self,img):
+    def DownImgUrl(self,img, fileNum):
         self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt +=1
         self._lockCurDownThreadCnt.release()
                
-        path = os.path.join(self._savePath,self._fileName+'_'+str(self._fileNum)+'.jpg')        
+        path = os.path.join(self._savePath,self._fileName+'_'+str(fileNum)+'.jpg')        
         urllib.request.urlretrieve(str(img['src']),path)        
         
         #Shared Data만 감싸준다        
 
 
-        self._lockFileNum.acquire()
-        self._fileNum +=1
-        self._lockFileNum.release()
+
 
         self._lockProgress.acquire()
         self.increasePregress(self._stepSize)
@@ -316,9 +312,9 @@ class ScrapImgs:
                 while(True):
                     if(len(imgsBase64) == 0 or idxImgsBase64 > len(imgsBase64)-1 ): break
                     if(self._curDownThreadCnt < self._totalDownThreadCnt ):
-
+                        self._fileNum +=1
                         arg = imgsBase64[idxImgsBase64]
-                        th = threading.Thread(target=self.downImgBase64, args=[arg])
+                        th = threading.Thread(target=self.downImgBase64, args=[arg,self._fileNum])
                         th.start()               
                         idxImgsBase64+=1
                     #time.sleep(0.05)
@@ -329,8 +325,9 @@ class ScrapImgs:
                     if(len(imgsUrl) == 0 or idxImgsUrl > len(imgsUrl)-1): break
 
                     if(self._curDownThreadCnt< self._totalDownThreadCnt ):
+                        self._fileNum +=1
                         arg = imgsUrl[idxImgsUrl]
-                        th = threading.Thread(target=self.DownImgUrl, args=[arg])
+                        th = threading.Thread(target=self.DownImgUrl, args=[arg,self._fileNum])
                         th.start()                
                         idxImgsUrl+=1
                     #time.sleep(0.05)
