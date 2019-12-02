@@ -47,8 +47,7 @@ class ScrapImgs:
 
     def __init__ (self, savePath, fileName,all_these_words= '',this_exact_word_or_phrase= '',any_of_these_words= '',none_of_these_words= ''):
         self._savePath = os.path.abspath(savePath)
-        self._fileName = fileName
-        self._progress = 0.0
+        self._fileName = fileName        
         self._all_these_words = all_these_words
         self._this_exact_word_or_phrase = this_exact_word_or_phrase
         self._any_of_these_words = any_of_these_words
@@ -57,10 +56,14 @@ class ScrapImgs:
         self._SCROLL_SLEEP_TIME = 1
         self._SCROLL_SIZE = 1080
         self.driver = webdriver.Chrome('.\chromedriver.exe')
+        self._progress = 0.0
+        self._lockProgress= threading.Lock()
         self._fileNum = self.initFileNum()
-        self._downTheadLock = threading.Lock()
-        self._totalDownThreadCnt = 20
+        self._lockFileNum = threading.Lock()
+        self._totalDownThreadCnt = 10
+        self._lockTotalDownThreadCnt = threading.Lock()        
         self._curDownThreadCnt = 0
+        self._lockCurDownThreadCnt = threading.Lock()
         self._stepSize = 0
 
         #self.driver = webdriver.Chrome(chrome_options = chrome_options)
@@ -92,39 +95,61 @@ class ScrapImgs:
             pass
 
     def downImgBase64(self,img):
-        self._downTheadLock.acquire()
+        self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt +=1
-        self._downTheadLock.release()
+        self._lockCurDownThreadCnt.release()
                
         path = os.path.join(self._savePath,self._fileName+'_'+str(self._fileNum)+'.jpg')        
         with open(path, 'wb') as file:
             file.write(base64.b64decode(str(img['src']).split(',')[1]))        
         
-        #Shared Data만 감싸준다        
-        self._downTheadLock.acquire()
-        self.increasePregress(self._stepSize) 
+        
+        #Shared Data만 감싸준다
+        
+
+
+        self._lockFileNum.acquire()
         self._fileNum +=1
+        self._lockFileNum.release()
+
+        self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt -=1
-        print('##progress : '+'{:04.2f}%' .format(self._progress))        
-        self._downTheadLock.release()
+        self._lockCurDownThreadCnt.release()
+
+        self._lockProgress.acquire()
+        self.increasePregress(self._stepSize)
+        print('##progress : '+'{:04.2f}%' .format(self._progress))   
+        self._lockProgress.release() 
+
         
         
 
     def DownImgUrl(self,img):
-        self._downTheadLock.acquire()
+        self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt +=1
-        self._downTheadLock.release()
+        self._lockCurDownThreadCnt.release()
                
         path = os.path.join(self._savePath,self._fileName+'_'+str(self._fileNum)+'.jpg')        
         urllib.request.urlretrieve(str(img['src']),path)        
         
         #Shared Data만 감싸준다
-        self._downTheadLock.acquire()        
-        self.increasePregress(self._stepSize) 
+        
+
+
+        self._lockFileNum.acquire()
         self._fileNum +=1
+        self._lockFileNum.release()
+
+        self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt -=1
-        print('##progress : '+'{:04.2f}%' .format(self._progress))        
-        self._downTheadLock.release()
+        self._lockCurDownThreadCnt.release()
+
+        self._lockProgress.acquire()
+        self.increasePregress(self._stepSize)
+        print('##progress : '+'{:04.2f}%' .format(self._progress))   
+        self._lockProgress.release()
+              
+
         
         
 
