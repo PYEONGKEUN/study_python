@@ -53,7 +53,7 @@ class ScrapImgs:
         self._any_of_these_words = any_of_these_words
         self._none_of_these_words = none_of_these_words
         self._SLEEP_TIME = 1
-        self._SCROLL_SLEEP_TIME = 1
+        self._SCROLL_SLEEP_TIME = 0.5
         self._SCROLL_SIZE = 1080
         self.driver = webdriver.Chrome('.\chromedriver.exe')
         self._progress = 0.0
@@ -77,9 +77,9 @@ class ScrapImgs:
         for filename in filenames:
             if re.match(namePattern, filename):
                 splitFilename = re.split('[._]', filename)                
-                if re.match(numPattern, splitFilename[1]):
-                    if int(splitFilename[1]) > num:
-                        num = int(splitFilename[1])
+                if re.match(numPattern, splitFilename[-2]):
+                    if int(splitFilename[-2]) > num:
+                        num = int(splitFilename[-2])
        
         return num
 
@@ -357,7 +357,8 @@ class ScrapImgs:
 
         except StopException:
             None
-        
+        except EOFError:
+            None
 
 
 
@@ -375,16 +376,16 @@ if __name__ == '__main__':
     start = time.time()
     #파일 저장 경로
     arg1 = './'
-    #저장할 이미지 이름 ex(올라프 -> 올라프_0 ~ 올라프_12)
-    arg2 = '올라프'
+    #저장할 이미지 이름 ex(올라프 -> 올라프_1 ~ 올라프_12)
+    arg2 = 'elsa'
     #다음 단어 모두 포함
-    arg3 = '올라프'
+    arg3 = 'elsa'
     #다음 단어 또는 문구 정확하게 포함
-    arg4 = '겨울왕국 아트 그림'
+    arg4 = ''
     #다음 단어 중 아무거나 포함
     arg5 = ''
     #다음 단어 제외
-    arg6 = '감독 배우 유아'
+    arg6 = ''
 
     app = ScrapImgs(arg1,arg2,arg3,arg4,arg5,arg6)
     app.run()
