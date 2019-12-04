@@ -8,31 +8,24 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
+# multi threading module
+import threading
 
-import threading 
 
-# mobile_emulation = {
-
-#     "deviceMetrics": { "width": 360, "height": 640, "pixelRatio": 3.0 },
-
-#     "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19" }
-
-# chrome_options = Options()
-
-# chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
 # bs4 module
 import re
 from bs4 import BeautifulSoup
 import time
-# convert base64 to img
+# convert base64 to img module
 import base64
-#down images
+# down images module
 import urllib.request
 
-# file IO lib
+# file IO module
 import os
 import sys
 import traceback
+# loggin moudule
 import logging as LOGGER
 
 
@@ -55,6 +48,7 @@ class ScrapImgs:
         self._SLEEP_TIME = 1
         self._SCROLL_SLEEP_TIME = 0.5
         self._SCROLL_SIZE = 1080
+        # https://chromedriver.chromium.org/downloads 에서 다운로드
         self.driver = webdriver.Chrome('.\chromedriver.exe')
         self._progress = 0.0
         self._lockProgress= threading.Lock()
@@ -65,14 +59,29 @@ class ScrapImgs:
         self._curDownThreadCnt = 0
         self._lockCurDownThreadCnt = threading.Lock()
         self._stepSize = 0
+        self._threads = []
+        # 모바일 버전으로 수행할때 필요한 값
+        #  mobile_emulation = {
 
-        #self.driver = webdriver.Chrome(chrome_options = chrome_options)
+        # "deviceMetrics": { "width": 360, "height": 640, "pixelRatio": 3.0 },
+
+        # "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19" }
+
+        # chrome_options = Options()
+
+        # chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
+
+
+        # self.driver = webdriver.Chrome(chrome_options = chrome_options)
 
     # 저장하려는 이름을 가진 파일이 존재한다면 다른 이름으로 바꿈 -> 이름뒤에 붙는 숫자를 변경
+    # 만약 5까지 받았다면 파일명은 6번부터 시작 
     def initFileNum(self):
         num = 0
+        # 패턴 확인에 정규식 활용
         namePattern = re.compile(self._fileName+'_'+'\d+')
         numPattern = re.compile('\d+')
+        # 해당 경로에 파일리스트를 가져옴
         filenames = os.listdir(self._savePath)
         for filename in filenames:
             if re.match(namePattern, filename):
@@ -80,7 +89,7 @@ class ScrapImgs:
                 if re.match(numPattern, splitFilename[-2]):
                     if int(splitFilename[-2]) > num:
                         num = int(splitFilename[-2])
-       
+        # 나중에 fileNum을 파라미터로 전해줄때 값을 미리 1씩 증가하여 전달하기 때문에 값을 증가시켜줄 필요가  없다
         return num
 
     
@@ -95,21 +104,20 @@ class ScrapImgs:
             pass
 
     def downImgBase64(self,img, fileNum):
+
+        # Lock() 한번에 하나의 쓰레드만 해당 공유 자원을 컨트롤하여 동작하도록 한다.
         self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt +=1
         self._lockCurDownThreadCnt.release()
-               
-        path = os.path.join(self._savePath,self._fileName+'_'+str(fileNum)+'.jpg')        
+        
+        # bas64로 인코딩된 이미지 파일을 다시 이미지 파일로 디코딩하여 저장
+        path = os.path.join(self._savePath,self._fileName+'_'+str(fileNum)+'.jpg')
+        #바이너리 파일로 저장        
         with open(path, 'wb') as file:
             file.write(base64.b64decode(str(img['src']).split(',')[1]))        
         
         
-        #Shared Data만 감싸준다
-        
-
-
-
-
+    
 
         self._lockProgress.acquire()
         self.increasePregress(self._stepSize)
@@ -127,14 +135,12 @@ class ScrapImgs:
         self._lockCurDownThreadCnt.acquire()
         self._curDownThreadCnt +=1
         self._lockCurDownThreadCnt.release()
-               
+
+        # img의 url 주소로 이미지 다운로드
         path = os.path.join(self._savePath,self._fileName+'_'+str(fileNum)+'.jpg')        
         urllib.request.urlretrieve(str(img['src']),path)        
         
-        #Shared Data만 감싸준다        
-
-
-
+  
 
         self._lockProgress.acquire()
         self.increasePregress(self._stepSize)
@@ -151,7 +157,7 @@ class ScrapImgs:
     def run(self):
         try:
             LOGGER.info('selenium Chrome Driver Loaded')
-            LOGGER.info('waiting 3 seconds....')
+            LOGGER.info('waiting '+str(self._SLEEP_TIME)+'seconds....')
             self.driver.implicitly_wait(self._SLEEP_TIME)
 
 
@@ -166,6 +172,7 @@ class ScrapImgs:
             # 검색
             
             self.driver.find_element(By.NAME, "q").click()
+            #########################
             #구글의 고급검색 기능 구현
             keyword  = ''
             #다음 단어 모두 포함:
@@ -212,7 +219,7 @@ class ScrapImgs:
 
             self.driver.find_element(By.NAME, "q").send_keys(keyword)
             self.driver.find_element(By.NAME, "q").send_keys(Keys.ENTER)
-
+            #########################
             
             # html = self.driver.page_source
 
@@ -230,14 +237,16 @@ class ScrapImgs:
             prevPageYOffset = self.driver.execute_script('return window.pageYOffset;')
             blockTime = 0
             for i in range(1,10000):
+                # 화면을 아래로 스크롤
                 self.driver.execute_script("window.scrollTo(0,"+str(i*self._SCROLL_SIZE)+")")
+                # 더이상 스크롤이 되지 않을때 작동
                 if(prevPageYOffset == self.driver.execute_script('return window.pageYOffset;')):
                     if(blockTime == 2) : break
                     html = self.driver.page_source
                     bsObj = BeautifulSoup(html, 'html.parser')
                 
                     # 검색결과 더보기 버튼은 항상 존재하지만 
-                    # style="display:none" style="" 로 보였다 안보였다 한다
+                    # 상위 태그의 속성들중 style="display:none" style="" 로 보였다 안보였다 한다
                     
 
                     showMore = bsObj.find_all('input',{'value':'결과 더보기'})
@@ -274,7 +283,7 @@ class ScrapImgs:
                         if(noImages is not None): break
                     blockTime +=1
 
-                time.sleep(self._SCROLL_SLEEP_TIME)
+                #time.sleep(self._SCROLL_SLEEP_TIME)
                 prevPageYOffset = self.driver.execute_script('return window.pageYOffset;')
                 
             # 이미지 소스를 가져올 페이지 복사후 selenium 크롬 종료
@@ -283,6 +292,7 @@ class ScrapImgs:
 
             # Beautiful Soup 으로 이미지 소스 파싱
             bsObj = BeautifulSoup(html, 'html.parser')
+            # 구글 이미지는 base64로 된 이미지와 url로 지정된 이미지로 검색 결과를 표시한다.
             imgsBase64 = bsObj.findAll('img',{'alt':re.compile('이미지'),'src':re.compile('base64')})
             imgsUrl = bsObj.findAll('img',{'alt':re.compile('이미지'),'src':re.compile('http')})
             #imgsBase64 = bsObj.findAll('img',{'src':re.compile('base64')})
@@ -290,7 +300,7 @@ class ScrapImgs:
             
 
 
-            # html에 img 태그들 수집
+            # html에 img 태그들 수집 디버깅을 위한 코드
             for img in imgsBase64:
                 with open(self._fileName+'.html', 'a', encoding='utf-8') as file:
                     file.writelines(str(img))
@@ -304,30 +314,31 @@ class ScrapImgs:
             self._stepSize = 100.0 / totalCnt
             
 
-
+            ths = []
             if(True):
                 #멀티스레딩을 사용한 이미지 다운로드
                 idxImgsBase64 = 0 
-                
+                #스레드의 최대 갯수를self._totalDownThreadCnt의 값으로 지정하여 총 스레드 지정
                 while(True):
+                    # src를 base64로 가지고 있는 img 태그가 없다면 
                     if(len(imgsBase64) == 0 or idxImgsBase64 > len(imgsBase64)-1 ): break
                     if(self._curDownThreadCnt < self._totalDownThreadCnt ):
                         self._fileNum +=1
                         arg = imgsBase64[idxImgsBase64]
-                        th = threading.Thread(target=self.downImgBase64, args=[arg,self._fileNum])
+                        th = threading.Thread(target=self.downImgBase64, args=[arg,self._fileNum])                        
+                        self._threads.append(th)                        
                         th.start()               
                         idxImgsBase64+=1
                     #time.sleep(0.05)
                 idxImgsUrl = 0 
-                
-                while(True):
-                    
+                #스레드의 최대 갯수를self._totalDownThreadCnt의 값으로 지정하여 총 스레드 지정
+                while(True):                    
                     if(len(imgsUrl) == 0 or idxImgsUrl > len(imgsUrl)-1): break
-
                     if(self._curDownThreadCnt< self._totalDownThreadCnt ):
                         self._fileNum +=1
                         arg = imgsUrl[idxImgsUrl]
                         th = threading.Thread(target=self.DownImgUrl, args=[arg,self._fileNum])
+                        self._threads.append(th)
                         th.start()                
                         idxImgsUrl+=1
                     #time.sleep(0.05)
@@ -373,13 +384,14 @@ class ScrapImgs:
 
 
 if __name__ == '__main__':
+    #수행 시간 측정을 위한 코드
     start = time.time()
     #파일 저장 경로
     arg1 = './'
     #저장할 이미지 이름 ex(올라프 -> 올라프_1 ~ 올라프_12)
-    arg2 = 'elsa'
+    arg2 = '올라프'
     #다음 단어 모두 포함
-    arg3 = 'elsa'
+    arg3 = '올라프'
     #다음 단어 또는 문구 정확하게 포함
     arg4 = ''
     #다음 단어 중 아무거나 포함
@@ -389,8 +401,9 @@ if __name__ == '__main__':
 
     app = ScrapImgs(arg1,arg2,arg3,arg4,arg5,arg6)
     app.run()
-
+    # 종료 확인 코드
     while(True):
         if (app._curDownThreadCnt == 0):
+            # 수행시간 출력
             print("time :", time.time() - start)
             break
